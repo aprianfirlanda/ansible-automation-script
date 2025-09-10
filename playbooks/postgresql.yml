@@ -1,0 +1,50 @@
+- name: Install & init PostgreSQL
+  hosts: db
+  become: true
+  gather_facts: true
+
+  vars:
+    # If you use upstream PGDG, you'd add a repo task first and change pkg names.
+    postgres_packages:
+      - postgresql-server
+      - postgresql
+      - python3-psycopg2  # for community.postgresql modules
+    postgres_service: postgresql
+    postgres_conf_dir: /var/lib/pgsql/data
+    postgres_listen_address: "127.0.0.1"  # change to 0.0.0.0 if remote access needed
+
+  tasks:
+    - name: Install packages
+      ansible.builtin.dnf:
+        name: "{{ postgres_packages }}"
+        state: present
+        update_cache: true
+
+    - name: Initialize database if not already
+      ansible.builtin.command: /usr/bin/postgresql-setup --initdb
+      args:
+        creates: "{{ postgres_conf_dir }}/PG_VERSION"
+
+    - name: Ensure service is enabled and started
+      ansible.builtin.systemd:
+        name: "{{ postgres_service }}"
+        state: started
+        enabled: true
+
+    - name: Ensure python driver present (safety)
+      ansible.builtin.dnf:
+        name: python3-psycopg2
+        state: present
+
+    - name: Create app DB user (example, local socket auth)
+      community.postgresql.postgresql_user:
+        name: app_user
+        password: "AppUserStrongPass!"
+        role_attr_flags: "LOGIN"
+      become_user: postgres
+
+    - name: Create app database
+      community.postgresql.postgresql_db:
+        name: app_db
+        owner: app_user
+      become_user: postgres

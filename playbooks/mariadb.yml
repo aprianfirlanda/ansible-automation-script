@@ -1,0 +1,59 @@
+- name: Install & configure MariaDB (MySQL-compatible)
+  hosts: db
+  become: true
+  gather_facts: true
+
+  vars:
+    mariadb_packages:
+      - mariadb-server
+      - python3-PyMySQL  # for community.mysql modules
+    mariadb_service: mariadb
+    root_password: "RootStrongPass!"  # store securely in real life
+
+  tasks:
+    - name: Install packages
+      ansible.builtin.dnf:
+        name: "{{ mariadb_packages }}"
+        state: present
+        update_cache: true
+
+    - name: Enable and start MariaDB
+      ansible.builtin.systemd:
+        name: "{{ mariadb_service }}"
+        state: started
+        enabled: true
+
+    # On many RHEL-like systems, root can auth via unix_socket (no password).
+    - name: Set/ensure root password and create a user/db
+      community.mysql.mysql_user:
+        name: root
+        host: localhost
+        password: "{{ root_password }}"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+        check_implicit_admin: true
+        state: present
+
+    - name: Create app user
+      community.mysql.mysql_user:
+        name: app_user
+        password: "AppUserStrongPass!"
+        priv: "app_db.*:ALL"
+        host: "%"
+        login_user: root
+        login_password: "{{ root_password }}"
+        state: present
+
+    - name: Create app database
+      community.mysql.mysql_db:
+        name: app_db
+        state: present
+        login_user: root
+        login_password: "{{ root_password }}"
+
+    - name: Open firewalld port (optional)
+      ansible.builtin.firewalld:
+        port: 3306/tcp
+        permanent: true
+        state: enabled
+        immediate: true
+      when: "'firewalld' in ansible_facts.services or ansible_facts.get('os_family') == 'RedHat'"

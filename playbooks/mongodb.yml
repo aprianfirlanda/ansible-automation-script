@@ -1,0 +1,45 @@
+- name: Install & configure MongoDB
+  hosts: db
+  become: true
+  gather_facts: true
+
+  vars:
+    # Adjust version string as you prefer (e.g., 6.0, 7.0)
+    mongodb_major: "7.0"
+
+  tasks:
+    - name: Add MongoDB yum repo
+      ansible.builtin.copy:
+        dest: /etc/yum.repos.d/mongodb-org.repo
+        content: |
+          [mongodb-org-{{ mongodb_major }}]
+          name=MongoDB Repository
+          baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/{{ mongodb_major }}/x86_64/
+          gpgcheck=1
+          enabled=1
+          gpgkey=https://www.mongodb.org/static/pgp/server-{{ mongodb_major }}.asc
+
+    - name: Install MongoDB
+      ansible.builtin.dnf:
+        name: mongodb-org
+        state: present
+        update_cache: true
+
+    - name: Enable and start mongod
+      ansible.builtin.systemd:
+        name: mongod
+        state: started
+        enabled: true
+
+    - name: Create admin user (localhost exception)
+      community.mongodb.mongodb_user:
+        database: admin
+        name: admin
+        password: "AdminStrongPass!"
+        roles:
+          - role: userAdminAnyDatabase
+            db: admin
+        login_host: localhost
+        login_port: 27017
+        # First creation often works without auth due to localhost exception
+        state: present
