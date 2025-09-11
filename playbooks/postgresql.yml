@@ -1,6 +1,6 @@
 ---
 - name: Install & configure PostgreSQL on Rocky 9
-  hosts: postgres
+  hosts: all
   become: true
   vars:
     pg_packages:
