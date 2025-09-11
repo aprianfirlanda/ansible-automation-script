@@ -64,8 +64,8 @@
       become_user: postgres
       community.postgresql.postgresql_privs:
         type: database
-        database: "{{ db_name }}"
-        roles: "{{ db_user }}"
+        objs: [ "{{ db_name }}" ]
+        roles: [ "{{ db_user }}" ]
         privs: ALL
         state: present
 
