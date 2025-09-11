@@ -35,5 +35,5 @@ example: inventories/db-prod.ini
 running on a specific host
 ```shell
 ansible -i inventories/db-prod.ini -m ping
-ansible-playbook -i inventories/db-prod.ini playbooks/postgres.yml
+ansible-playbook -i inventories/db-prod.ini playbooks/postgresql.yml
 ```
