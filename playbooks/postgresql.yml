@@ -57,6 +57,7 @@
       community.postgresql.postgresql_user:
         name: "{{ db_user }}"
         password: "{{ db_password }}"
+        role_attr_flags: LOGIN
         state: present
 
     - name: Grant ALL privileges on the database to the user
@@ -64,8 +65,10 @@
       become_user: postgres
       community.postgresql.postgresql_privs:
         type: database
-        objs: [ "{{ db_name }}" ]
-        roles: "{{ db_user }}"
+        objs:
+          - "{{ db_name }}"
+        roles:
+          - "{{ db_user }}"
         privs: ALL
         state: present
         login_db: postgres
