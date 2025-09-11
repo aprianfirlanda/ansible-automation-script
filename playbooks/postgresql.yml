@@ -7,6 +7,7 @@
       - postgresql
       - postgresql-server
       - python3-psycopg2  # needed by community.postgresql modules
+
   tasks:
     - name: Ensure packages present
       ansible.builtin.dnf:
@@ -24,6 +25,7 @@
         regexp: "^#?listen_addresses ="
         line: "listen_addresses = '*'"
         backup: yes
+      notify: Restart PostgreSQL   # 👈 tell Ansible to restart later if this file changed
 
     - name: Open pg_hba for md5 (simple example, adjust for your network)
       ansible.builtin.blockinfile:
@@ -32,6 +34,7 @@
         block: |
           host    all             all             0.0.0.0/0               md5
           host    all             all             ::/0                    md5
+      notify: Restart PostgreSQL   # 👈 same here
 
     - name: Enable & start PostgreSQL
       ansible.builtin.service:
@@ -55,3 +58,9 @@
         db: "{{ db_name }}"
         priv: "ALL"
         state: present
+
+  handlers:
+    - name: Restart PostgreSQL
+      ansible.builtin.service:
+        name: postgresql
+        state: restarted
