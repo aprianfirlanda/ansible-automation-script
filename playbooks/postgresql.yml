@@ -68,6 +68,7 @@
         roles: [ "{{ db_user }}" ]
         privs: ALL
         state: present
+        login_db: postgres
 
   handlers:
     - name: Restart PostgreSQL
