@@ -63,14 +63,9 @@
     - name: Grant ALL privileges on the database to the user
       become: true
       become_user: postgres
-      community.postgresql.postgresql_privs:
-        type: database
-        objs:
-          - "{{ [db_name] }}"
-        roles: "{{ db_user }}"
-        privs: ALL
-        state: present
+      community.postgresql.postgresql_query:
         login_db: postgres
+        query: "GRANT ALL PRIVILEGES ON DATABASE {{ db_name | quote }} TO {{ db_user | quote }};"
 
   handlers:
     - name: Restart PostgreSQL
