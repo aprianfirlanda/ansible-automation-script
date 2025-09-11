@@ -49,14 +49,22 @@
         name: "{{ db_name }}"
         state: present
 
-    - name: Ensure application user exists
+    - name: Ensure application user exists (create role + password)
       become: true
       become_user: postgres
       community.postgresql.postgresql_user:
         name: "{{ db_user }}"
         password: "{{ db_password }}"
+        state: present
+
+    - name: Grant ALL privileges on the database to the user
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_privs:
+        type: database
         db: "{{ db_name }}"
-        priv: "ALL"
+        roles: "{{ db_user }}"
+        privs: ALL
         state: present
 
   handlers:
