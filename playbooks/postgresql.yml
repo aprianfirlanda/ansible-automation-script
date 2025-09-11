@@ -40,11 +40,15 @@
         state: started
 
     - name: Ensure database exists
+      become: true
+      become_user: postgres
       community.postgresql.postgresql_db:
         name: "{{ db_name }}"
         state: present
 
     - name: Ensure application user exists
+      become: true
+      become_user: postgres
       community.postgresql.postgresql_user:
         name: "{{ db_user }}"
         password: "{{ db_password }}"
