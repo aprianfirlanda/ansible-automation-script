@@ -65,7 +65,7 @@
       community.postgresql.postgresql_privs:
         type: database
         objs: [ "{{ db_name }}" ]
-        roles: [ "{{ db_user }}" ]
+        roles: "{{ db_user }}"
         privs: ALL
         state: present
         login_db: postgres
