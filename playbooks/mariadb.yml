@@ -1,59 +1,41 @@
-- name: Install & configure MariaDB (MySQL-compatible)
-  hosts: db
+---
+- name: Install & configure MariaDB on Rocky 9
+  hosts: mariadb
   become: true
-  gather_facts: true
-
   vars:
     mariadb_packages:
       - mariadb-server
-      - python3-PyMySQL  # for community.mysql modules
-    mariadb_service: mariadb
-    root_password: "RootStrongPass!"  # store securely in real life
-
+      - python3-pymysql   # needed by community.mysql modules
+    mariadb_cnf: /etc/my.cnf.d/mariadb-server.cnf
   tasks:
-    - name: Install packages
+    - name: Ensure packages present
       ansible.builtin.dnf:
         name: "{{ mariadb_packages }}"
         state: present
-        update_cache: true
 
-    - name: Enable and start MariaDB
-      ansible.builtin.systemd:
-        name: "{{ mariadb_service }}"
-        state: started
+    - name: Bind on all interfaces (optional)
+      ansible.builtin.lineinfile:
+        path: "{{ mariadb_cnf }}"
+        regexp: '^\s*bind-address\s*='
+        line: 'bind-address=0.0.0.0'
+        insertafter: '^\[mysqld\]'
+        backup: yes
+
+    - name: Enable & start MariaDB
+      ansible.builtin.service:
+        name: mariadb
         enabled: true
+        state: started
 
-    # On many RHEL-like systems, root can auth via unix_socket (no password).
-    - name: Set/ensure root password and create a user/db
-      community.mysql.mysql_user:
-        name: root
-        host: localhost
-        password: "{{ root_password }}"
-        login_unix_socket: /var/lib/mysql/mysql.sock
-        check_implicit_admin: true
-        state: present
-
-    - name: Create app user
-      community.mysql.mysql_user:
-        name: app_user
-        password: "AppUserStrongPass!"
-        priv: "app_db.*:ALL"
-        host: "%"
-        login_user: root
-        login_password: "{{ root_password }}"
-        state: present
-
-    - name: Create app database
+    - name: Ensure database exists
       community.mysql.mysql_db:
-        name: app_db
+        name: "{{ db_name }}"
         state: present
-        login_user: root
-        login_password: "{{ root_password }}"
 
-    - name: Open firewalld port (optional)
-      ansible.builtin.firewalld:
-        port: 3306/tcp
-        permanent: true
-        state: enabled
-        immediate: true
-      when: "'firewalld' in ansible_facts.services or ansible_facts.get('os_family') == 'RedHat'"
+    - name: Ensure application user exists with privileges
+      community.mysql.mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        host: "%"
+        priv: "{{ db_name }}.*:ALL"
+        state: present

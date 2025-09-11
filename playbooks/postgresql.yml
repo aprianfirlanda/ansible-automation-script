@@ -1,50 +1,53 @@
-- name: Install & init PostgreSQL
-  hosts: db
+---
+- name: Install & configure PostgreSQL on Rocky 9
+  hosts: postgres
   become: true
-  gather_facts: true
-
   vars:
-    # If you use upstream PGDG, you'd add a repo task first and change pkg names.
-    postgres_packages:
-      - postgresql-server
+    pg_packages:
       - postgresql
-      - python3-psycopg2  # for community.postgresql modules
-    postgres_service: postgresql
-    postgres_conf_dir: /var/lib/pgsql/data
-    postgres_listen_address: "127.0.0.1"  # change to 0.0.0.0 if remote access needed
-
+      - postgresql-server
+      - python3-psycopg2  # needed by community.postgresql modules
   tasks:
-    - name: Install packages
+    - name: Ensure packages present
       ansible.builtin.dnf:
-        name: "{{ postgres_packages }}"
+        name: "{{ pg_packages }}"
         state: present
-        update_cache: true
 
-    - name: Initialize database if not already
-      ansible.builtin.command: /usr/bin/postgresql-setup --initdb
+    - name: Initialize database (idempotent)
+      ansible.builtin.command: "postgresql-setup --initdb"
       args:
-        creates: "{{ postgres_conf_dir }}/PG_VERSION"
+        creates: /var/lib/pgsql/data/PG_VERSION
 
-    - name: Ensure service is enabled and started
-      ansible.builtin.systemd:
-        name: "{{ postgres_service }}"
-        state: started
+    - name: Allow remote connections (optional)
+      ansible.builtin.lineinfile:
+        path: /var/lib/pgsql/data/postgresql.conf
+        regexp: "^#?listen_addresses ="
+        line: "listen_addresses = '*'"
+        backup: yes
+
+    - name: Open pg_hba for md5 (simple example, adjust for your network)
+      ansible.builtin.blockinfile:
+        path: /var/lib/pgsql/data/pg_hba.conf
+        marker: "# {mark} ANSIBLE MANAGED RULES"
+        block: |
+          host    all             all             0.0.0.0/0               md5
+          host    all             all             ::/0                    md5
+
+    - name: Enable & start PostgreSQL
+      ansible.builtin.service:
+        name: postgresql
         enabled: true
+        state: started
 
-    - name: Ensure python driver present (safety)
-      ansible.builtin.dnf:
-        name: python3-psycopg2
+    - name: Ensure database exists
+      community.postgresql.postgresql_db:
+        name: "{{ db_name }}"
         state: present
 
-    - name: Create app DB user (example, local socket auth)
+    - name: Ensure application user exists
       community.postgresql.postgresql_user:
-        name: app_user
-        password: "AppUserStrongPass!"
-        role_attr_flags: "LOGIN"
-      become_user: postgres
-
-    - name: Create app database
-      community.postgresql.postgresql_db:
-        name: app_db
-        owner: app_user
-      become_user: postgres
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        db: "{{ db_name }}"
+        priv: "ALL"
+        state: present

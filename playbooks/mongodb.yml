@@ -1,45 +1,44 @@
-- name: Install & configure MongoDB
-  hosts: db
+---
+- name: Install & configure MongoDB on Rocky 9
+  hosts: mongodb
   become: true
-  gather_facts: true
-
   vars:
-    # Adjust version string as you prefer (e.g., 6.0, 7.0)
-    mongodb_major: "7.0"
-
+    mongodb_repo_name: "mongodb-org-7.0"
+    mongodb_repo_baseurl: "https://repo.mongodb.org/yum/redhat/9/mongodb-org/7.0/x86_64/"
+    mongodb_packages:
+      - mongodb-org
+      - python3-pymongo  # needed by community.mongodb modules
   tasks:
-    - name: Add MongoDB yum repo
-      ansible.builtin.copy:
-        dest: /etc/yum.repos.d/mongodb-org.repo
-        content: |
-          [mongodb-org-{{ mongodb_major }}]
-          name=MongoDB Repository
-          baseurl=https://repo.mongodb.org/yum/redhat/$releasever/mongodb-org/{{ mongodb_major }}/x86_64/
-          gpgcheck=1
-          enabled=1
-          gpgkey=https://www.mongodb.org/static/pgp/server-{{ mongodb_major }}.asc
+    - name: Add MongoDB YUM repo
+      ansible.builtin.yum_repository:
+        name: "{{ mongodb_repo_name }}"
+        description: "MongoDB Repository"
+        baseurl: "{{ mongodb_repo_baseurl }}"
+        gpgcheck: yes
+        gpgkey: https://www.mongodb.org/static/pgp/server-7.0.asc
+        enabled: yes
 
-    - name: Install MongoDB
+    - name: Install MongoDB packages
       ansible.builtin.dnf:
-        name: mongodb-org
+        name: "{{ mongodb_packages }}"
         state: present
-        update_cache: true
 
-    - name: Enable and start mongod
-      ansible.builtin.systemd:
+    - name: Enable & start mongod
+      ansible.builtin.service:
         name: mongod
-        state: started
         enabled: true
+        state: started
 
-    - name: Create admin user (localhost exception)
+    # --- Simple user/db creation while authorization is disabled (default) ---
+    # For production, you should enable security.authorization and recreate users accordingly.
+    - name: Ensure application user exists with readWrite on the app DB
       community.mongodb.mongodb_user:
-        database: admin
-        name: admin
-        password: "AdminStrongPass!"
+        database: "{{ db_name }}"
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
         roles:
-          - role: userAdminAnyDatabase
-            db: admin
+          - role: readWrite
+            db: "{{ db_name }}"
+        state: present
         login_host: localhost
         login_port: 27017
-        # First creation often works without auth due to localhost exception
-        state: present

@@ -29,7 +29,7 @@ create a file under the inventories directory that describes the name of the hos
 example: inventories/db-prod.ini
 
 ```yaml
-192.168.1.10 ansible_user=rocky ansible_password=yourPass ansible_become_password=yourSudoPass
+192.168.1.10 ansible_user=rocky ansible_password=yourPass db_name=appdb db_user=appuser db_password=AppP@ssw0rd!
 ```
 
 running on a specific host
