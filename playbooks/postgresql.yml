@@ -27,7 +27,7 @@
         regexp: "^#?listen_addresses ="
         line: "listen_addresses = '*'"
         backup: yes
-      notify: Restart PostgreSQL   # 👈 tell Ansible to restart later if this file changed
+      notify: Restart PostgreSQL
 
     - name: Open pg_hba for md5 (simple example, adjust for your network)
       ansible.builtin.blockinfile:
@@ -36,13 +36,21 @@
         block: |
           host    all             all             0.0.0.0/0               md5
           host    all             all             ::/0                    md5
-      notify: Restart PostgreSQL   # 👈 same here
+      notify: Restart PostgreSQL
 
     - name: Enable & start PostgreSQL
       ansible.builtin.service:
         name: postgresql
         enabled: true
         state: started
+
+    - name: Open port 5432 in firewalld
+      ansible.posix.firewalld:
+        port: 5432/tcp
+        permanent: true
+        immediate: true
+        state: enabled
+      when: ansible_facts.os_family == "RedHat"
 
     - name: Ensure database exists
       become: true
