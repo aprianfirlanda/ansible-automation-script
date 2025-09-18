@@ -41,8 +41,10 @@ ansible-playbook -i inventories/db-prod.ini playbooks/postgresql.yml
 1. build go-ansible-executor
 
 ```shell
-cd go-anisble-executor
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o db-ansible-executor
+cd ansible-automation-script/go-ansible-executor
+
+# cross-compile for Rocky 9.6 (Linux amd64)
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../ansible-executor
 ```
 
 now there will be
