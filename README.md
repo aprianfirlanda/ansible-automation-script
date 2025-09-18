@@ -60,17 +60,25 @@ ansible-automation-script/
 
 2. Copy to Rocky Linux
 
-On your Mac:
+On the server:
+
 ```shell
-scp ansible-executor root@rocky9-server:/opt/ansible-executor/bin/
-scp -r ../playbooks root@rocky9-server:/opt/ansible-executor/
+# Create app directories
+mkdir -p /opt/ansible-executor/bin
+mkdir -p /opt/ansible-executor/inventories
+mkdir -p /opt/ansible-executor/playbooks
+
+# (optional) create a dedicated user
+useradd --system --no-create-home --shell /sbin/nologin ansiblex
+
+# Give ownership to ansiblex
+chown -R ansiblex:ansiblex /opt/ansible-executor
 ```
 
-On the server:
+On your Mac:
 ```shell
-sudo useradd --system --no-create-home --shell /sbin/nologin ansiblex
-sudo mkdir -p /opt/ansible-executor/{bin,inventories}
-sudo chown -R ansiblex:ansiblex /opt/ansible-executor
+scp ansible-executor root@10.2.0.82:/opt/ansible-executor/bin/
+scp -r ../playbooks root@10.2.0.82:/opt/ansible-executor/
 ```
 
 3. Create a systemd unit
