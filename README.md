@@ -78,6 +78,7 @@ chown -R ansiblex:ansiblex /opt/ansible-executor
 On your Mac:
 ```shell
 scp ansible-executor root@10.2.0.82:/opt/ansible-executor/bin/
+scp ansible.cfg root@10.2.0.82:/opt/ansible-executor/
 scp -r playbooks root@10.2.0.82:/opt/ansible-executor/
 ```
 
