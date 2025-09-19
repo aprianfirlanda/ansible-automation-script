@@ -153,7 +153,7 @@ Publish a message to NATS:
 nats pub db.install '{
   "id": 16,
   "name": "DB Prod PostgreSQL",
-  "ip_address": "10.2.0.88",
+  "ip_address": "10.2.0.118",
   "vm_user": "root",
   "vm_password": "P@ssw0rd123!!",
   "db_type": "postgresql",
