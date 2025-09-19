@@ -77,6 +77,10 @@ sudo chmod 0755 /opt/ansible-executor/{bin,playbooks}
 sudo chmod 0700 /opt/ansible-executor/inventories
 sudo chmod 0700 /opt/ansible-executor/.ansible
 sudo chmod 0700 /opt/ansible-executor/.ansible/tmp
+
+sudo mkdir -p /var/tmp/.ansible-root/tmp
+sudo chown root:root /var/tmp/.ansible-root/tmp
+sudo chmod 700 /var/tmp/.ansible-root/tmp
 ```
 
 On your Mac:
@@ -107,6 +111,11 @@ Group=ansiblex
 WorkingDirectory=/opt/ansible-executor
 
 # Environment variables
+Environment="HOME=/opt/ansible-executor"
+Environment="ANSIBLE_CONFIG=/opt/ansible-executor/ansible.cfg"
+Environment="ANSIBLE_LOCAL_TEMP=/opt/ansible-executor/.ansible/tmp"
+Environment="ANSIBLE_REMOTE_TEMP=/tmp
+Environment="ANSIBLE_HOST_KEY_CHECKING=False"
 Environment="NATS_URL=nats://127.0.0.1:4222"
 Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
 
