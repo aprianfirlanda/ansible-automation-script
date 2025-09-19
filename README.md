@@ -85,9 +85,9 @@ sudo chmod 700 /var/tmp/.ansible-root/tmp
 
 On your Mac:
 ```shell
-scp ansible-executor root@10.2.0.82:/opt/ansible-executor/bin/
-scp ansible.cfg root@10.2.0.82:/opt/ansible-executor/
-scp -r playbooks root@10.2.0.82:/opt/ansible-executor/
+scp ansible-executor root@10.2.0.159:/opt/ansible-executor/bin/
+scp ansible.cfg root@10.2.0.159:/opt/ansible-executor/
+scp -r playbooks root@10.2.0.159:/opt/ansible-executor/
 ```
 
 On server:
@@ -114,7 +114,7 @@ WorkingDirectory=/opt/ansible-executor
 Environment="HOME=/opt/ansible-executor"
 Environment="ANSIBLE_CONFIG=/opt/ansible-executor/ansible.cfg"
 Environment="ANSIBLE_LOCAL_TEMP=/opt/ansible-executor/.ansible/tmp"
-Environment="ANSIBLE_REMOTE_TEMP=/tmp
+Environment="ANSIBLE_REMOTE_TEMP=/tmp"
 Environment="ANSIBLE_HOST_KEY_CHECKING=False"
 Environment="NATS_URL=nats://127.0.0.1:4222"
 Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin"
