@@ -266,7 +266,7 @@ func runPlaybook(parent context.Context, inventoryPath, playbookPath string) (ex
 	cmd := exec.CommandContext(ctx, "ansible-playbook", "-i", inventoryPath, playbookPath)
 
 	var buf bytes.Buffer
-	mw := io.MultiWriter(&buf, os.Stdout, os.Stderr) // stream to journald + capture
+	mw := io.MultiWriter(&buf, os.Stdout) // stream to journald + capture
 	cmd.Stdout = mw
 	cmd.Stderr = mw
 
