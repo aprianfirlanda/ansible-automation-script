@@ -64,15 +64,19 @@ On the server:
 
 ```shell
 # Create app directories
-mkdir -p /opt/ansible-executor/bin
-mkdir -p /opt/ansible-executor/inventories
-mkdir -p /opt/ansible-executor/playbooks
+# service-only user (no home, nologin)
+sudo useradd --system --shell /sbin/nologin ansiblex
 
-# (optional) create a dedicated user
-useradd --system --no-create-home --shell /sbin/nologin ansiblex
+# app dirs
+sudo mkdir -p /opt/ansible-executor/{bin,playbooks,inventories,.ansible/tmp}
 
-# Give ownership to ansiblex
-chown -R ansiblex:ansiblex /opt/ansible-executor
+# permissions (service user owns the tree)
+sudo chown -R ansiblex:ansiblex /opt/ansible-executor
+sudo chmod 0755 /opt/ansible-executor
+sudo chmod 0755 /opt/ansible-executor/{bin,playbooks}
+sudo chmod 0700 /opt/ansible-executor/inventories
+sudo chmod 0700 /opt/ansible-executor/.ansible
+sudo chmod 0700 /opt/ansible-executor/.ansible/tmp
 ```
 
 On your Mac:
@@ -80,6 +84,12 @@ On your Mac:
 scp ansible-executor root@10.2.0.82:/opt/ansible-executor/bin/
 scp ansible.cfg root@10.2.0.82:/opt/ansible-executor/
 scp -r playbooks root@10.2.0.82:/opt/ansible-executor/
+```
+
+On server:
+```shell
+sudo chmod 0755 /opt/ansible-executor/bin/ansible-executor
+sudo chown -R ansiblex:ansiblex /opt/ansible-executor
 ```
 
 3. Create a systemd unit
@@ -132,14 +142,14 @@ journalctl -u ansible-executor -f
 Publish a message to NATS:
 ```shell
 nats pub db.install '{
-    "id": 1,
-    "name": "DB PostgreSQL HiTeman Prod",
-    "ip_address": "10.2.0.61",
-    "vm_user": "root",
-    "vm_password": "P@ssw0rd123!!",
-    "db_type": "postgresql",
-    "db_user": "appUser",
-    "db_password": "appPassword",
-    "db_name": "app_db"
+  "id": 16,
+  "name": "DB Prod PostgreSQL",
+  "ip_address": "10.2.0.88",
+  "vm_user": "root",
+  "vm_password": "P@ssw0rd123!!",
+  "db_type": "postgresql",
+  "db_user": "appuser",
+  "db_password": "appPassword",
+  "db_name": "app_db" 
 }'
 ```

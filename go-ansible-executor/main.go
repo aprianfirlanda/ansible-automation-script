@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -262,26 +264,29 @@ func runPlaybook(parent context.Context, inventoryPath, playbookPath string) (ex
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "ansible-playbook", "-i", inventoryPath, playbookPath)
-	out, runErr := cmd.CombinedOutput()
 
-	// Determine exit code
+	var buf bytes.Buffer
+	mw := io.MultiWriter(&buf, os.Stdout, os.Stderr) // stream to journald + capture
+	cmd.Stdout = mw
+	cmd.Stderr = mw
+
+	runErr := cmd.Run()
+
 	code := 0
 	if runErr != nil {
-		// If context timeout
-		if errors.Is(runErr, context.DeadlineExceeded) {
-			return 124, out, fmt.Errorf("ansible-playbook timed out after %s", playTimeout)
-		}
-		// If exit code available
 		var exitErr *exec.ExitError
+		if errors.Is(runErr, context.DeadlineExceeded) {
+			return 124, buf.Bytes(), fmt.Errorf("ansible-playbook timed out after %s", playTimeout)
+		}
 		if errors.As(runErr, &exitErr) {
 			code = exitErr.ExitCode()
 		} else {
-			// generic failure
 			code = 1
 		}
-		return code, out, runErr
+		return code, buf.Bytes(), runErr
 	}
-	return 0, out, nil
+
+	return 0, buf.Bytes(), nil
 }
 
 func publishStatus(nc *nats.Conn, st InstallStatus) {
