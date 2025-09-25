@@ -17,6 +17,7 @@ sudo dnf config-manager --set-enabled crb
 sudo dnf install ansible -y
 ansible --version
 ```
+last install : ansible core 2.14.18
 
 if error, do this
 ```shell
