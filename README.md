@@ -18,6 +18,22 @@ sudo dnf install ansible -y
 ansible --version
 ```
 
+if error, do this
+```shell
+sudo vi /etc/resolv.conf
+```
+
+add add this
+```
+nameserver 8.8.8.8
+nameserver 1.1.1.1
+```
+
+then test ping
+```
+ping mirrors.rockylinux.org
+```
+
 ## Requirement
 remember to install this:
 ```shell
