@@ -165,11 +165,11 @@ journalctl -u ansible-executor -f
 Publish a message to NATS:
 ```shell
 nats pub db.install '{
-  "id": 16,
-  "name": "DB Prod PostgreSQL",
-  "ip_address": "10.2.0.118",
-  "vm_user": "root",
-  "vm_password": "P@ssw0rd123!!",
+  "id": 4,
+  "name": "db postgresql prod",
+  "ip_address": "10.2.10.16",
+  "vm_user": "apri",
+  "vm_password": "salah_password",
   "db_type": "postgresql",
   "db_user": "appuser",
   "db_password": "appPassword",
