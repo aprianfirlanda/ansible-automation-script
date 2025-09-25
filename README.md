@@ -88,23 +88,20 @@ sudo useradd --system --shell /sbin/nologin ansiblex
 sudo mkdir -p /opt/ansible-executor/{bin,playbooks,inventories,.ansible/tmp}
 
 # permissions (service user owns the tree)
+sudo chown -R apri:apri /opt/ansible-executor
 sudo chown -R ansiblex:ansiblex /opt/ansible-executor
 sudo chmod 0755 /opt/ansible-executor
 sudo chmod 0755 /opt/ansible-executor/{bin,playbooks}
 sudo chmod 0700 /opt/ansible-executor/inventories
 sudo chmod 0700 /opt/ansible-executor/.ansible
 sudo chmod 0700 /opt/ansible-executor/.ansible/tmp
-
-sudo mkdir -p /var/tmp/.ansible-root/tmp
-sudo chown root:root /var/tmp/.ansible-root/tmp
-sudo chmod 700 /var/tmp/.ansible-root/tmp
 ```
 
 On your Mac:
 ```shell
-scp ansible-executor root@10.2.0.159:/opt/ansible-executor/bin/
-scp ansible.cfg root@10.2.0.159:/opt/ansible-executor/
-scp -r playbooks root@10.2.0.159:/opt/ansible-executor/
+scp ansible-executor apri@10.2.10.15:/opt/ansible-executor/bin/
+scp ansible.cfg apri@10.2.10.15:/opt/ansible-executor/
+scp -r playbooks apri@10.2.10.15:/opt/ansible-executor/
 ```
 
 On server:
