@@ -4,11 +4,16 @@
   become: true
   collections:
     - community.postgresql
+    - ansible.posix            # ← add this collection
+
   vars:
     pg_packages:
       - postgresql
       - postgresql-server
-      - python3-psycopg2  # needed by community.postgresql modules
+      - python3-psycopg2
+    firewalld_packages:        # ← add required pkgs for firewalld module
+      - firewalld
+      - python3-firewall
 
   tasks:
     - name: Ensure packages present
@@ -43,6 +48,19 @@
         name: postgresql
         enabled: true
         state: started
+
+    - name: Install firewalld and python bindings (required by ansible.posix.firewalld)
+      ansible.builtin.dnf:
+        name: "{{ firewalld_packages }}"
+        state: present
+      when: ansible_facts.os_family == "RedHat"
+
+    - name: Start & enable firewalld
+      ansible.builtin.service:
+        name: firewalld
+        state: started
+        enabled: true
+      when: ansible_facts.os_family == "RedHat"
 
     - name: Open port 5432 in firewalld
       ansible.posix.firewalld:
