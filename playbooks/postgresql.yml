@@ -4,18 +4,36 @@
   become: true
   collections:
     - community.postgresql
-    - ansible.posix            # ← add this collection
+    - ansible.posix
 
   vars:
     pg_packages:
       - postgresql
       - postgresql-server
       - python3-psycopg2
-    firewalld_packages:        # ← add required pkgs for firewalld module
+    firewalld_packages:
       - firewalld
       - python3-firewall
 
   tasks:
+    - name: Ensure resolv.conf has correct DNS servers
+      ansible.builtin.blockinfile:
+        path: /etc/resolv.conf
+        marker: "# {mark} ANSIBLE MANAGED DNS"
+        block: |
+          nameserver 8.8.8.8
+          nameserver 1.1.1.1
+        insertbefore: BOF
+        backup: yes
+
+    - name: Verify DNS resolution works (mirrors.rockylinux.org)
+      ansible.builtin.command: getent hosts mirrors.rockylinux.org
+      register: dns_check
+      changed_when: false
+      retries: 10         # coba sampai 10 kali
+      delay: 3            # jeda 3 detik antar percobaan
+      until: dns_check.rc == 0
+
     - name: Ensure packages present
       ansible.builtin.dnf:
         name: "{{ pg_packages }}"
