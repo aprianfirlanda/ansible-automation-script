@@ -1,85 +1,14 @@
 ---
-- name: Install & configure PostgreSQL on Rocky 9 (with DNS fix)
+- name: Install & configure PostgreSQL on Rocky 9
   hosts: all
   become: true
-  gather_facts: true
   collections:
     - community.postgresql
-    - ansible.posix
-
   vars:
-    # --- PostgreSQL package set
     pg_packages:
       - postgresql
       - postgresql-server
       - python3-psycopg2  # needed by community.postgresql modules
-
-    # --- Desired DNS servers to ensure dnf & general name resolution work
-    desired_dns_servers: "8.8.8.8 1.1.1.1"
-
-  pre_tasks:
-    - name: Check if /etc/resolv.conf is a symlink (often NM-managed on Rocky 9)
-      ansible.builtin.stat:
-        path: /etc/resolv.conf
-        follow: false
-      register: resolv_stat
-
-    - name: Get active NetworkManager connection name (if any)
-      ansible.builtin.command: nmcli -t -f NAME connection show --active
-      register: nm_active_conns
-      changed_when: false
-      failed_when: false
-
-    - name: Pick the first active connection name
-      ansible.builtin.set_fact:
-        active_nm_conn: "{{ (nm_active_conns.stdout_lines | default([])) | first | default('') }}"
-      when: nm_active_conns is defined
-
-    - name: Configure DNS via NetworkManager on the active connection (if resolv.conf is symlink)
-      ansible.builtin.command: >
-        nmcli connection modify "{{ active_nm_conn }}"
-        ipv4.dns "{{ desired_dns_servers }}"
-        ipv4.ignore-auto-dns yes
-      when:
-        - resolv_stat.stat.islnk | default(false)
-        - active_nm_conn | length > 0
-      register: nm_dns_mod
-      changed_when: nm_dns_mod.rc == 0
-
-    - name: Bring up the connection to apply DNS changes
-      ansible.builtin.command: nmcli connection up "{{ active_nm_conn }}"
-      when:
-        - resolv_stat.stat.islnk | default(false)
-        - active_nm_conn | length > 0
-      register: nm_conn_up
-      changed_when: nm_conn_up.rc == 0
-
-    - name: Ensure NetworkManager is running (best-effort)
-      ansible.builtin.service:
-        name: NetworkManager
-        state: started
-        enabled: true
-
-    - name: Inject nameservers directly into /etc/resolv.conf (if not NM-managed)
-      ansible.builtin.blockinfile:
-        path: /etc/resolv.conf
-        marker: "# {mark} ANSIBLE MANAGED DNS"
-        block: |
-          nameserver 8.8.8.8
-          nameserver 1.1.1.1
-        insertbefore: BOF
-        create: yes
-        backup: yes
-      when: not (resolv_stat.stat.islnk | default(false))
-
-    - name: DNF clean all (after fixing DNS)
-      ansible.builtin.command: dnf clean all
-      changed_when: false
-
-    - name: DNF makecache (rebuild repo metadata; will fail fast if DNS still broken)
-      ansible.builtin.command: dnf makecache -y
-      register: dnf_makecache
-      changed_when: false
 
   tasks:
     - name: Ensure packages present
@@ -115,20 +44,7 @@
         enabled: true
         state: started
 
-    - name: Ensure firewalld is installed and running (RHEL family)
-      ansible.builtin.dnf:
-        name: firewalld
-        state: present
-      when: ansible_facts.os_family == "RedHat"
-
-    - name: Start & enable firewalld
-      ansible.builtin.service:
-        name: firewalld
-        state: started
-        enabled: true
-      when: ansible_facts.os_family == "RedHat"
-
-    - name: Open port 5432/tcp in firewalld
+    - name: Open port 5432 in firewalld
       ansible.posix.firewalld:
         port: 5432/tcp
         permanent: true
