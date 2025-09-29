@@ -8,10 +8,12 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -92,7 +94,7 @@ func main() {
 // ------------ message handling ------------
 
 func handleMessage(parent context.Context, nc *nats.Conn, msg *nats.Msg) {
-	time.Sleep(3 * time.Second)
+	time.Sleep(10 * time.Second)
 	var req InstallRequest
 	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		log.Printf("[warn] invalid JSON: %v", err)
@@ -114,6 +116,19 @@ func handleMessage(parent context.Context, nc *nats.Conn, msg *nats.Msg) {
 			Name:      req.Name,
 			Status:    "error",
 			Error:     err.Error(),
+			Timestamp: time.Now(),
+		})
+		return
+	}
+
+	// Wait until SSH on the target IP is reachable (blocks until success or service is stopped)
+	if err := waitForSSH(parent, req.IPAddress); err != nil {
+		log.Printf("[error] SSH not reachable for id=%d (%s): %v", req.ID, req.IPAddress, err)
+		publishStatus(nc, InstallStatus{
+			ID:        req.ID,
+			Name:      req.Name,
+			Status:    "error",
+			Error:     "SSH not reachable: " + err.Error(),
 			Timestamp: time.Now(),
 		})
 		return
@@ -321,4 +336,43 @@ func truncate(s string, max int) string {
 		return s
 	}
 	return s[:max] + "\n...[truncated]..."
+}
+
+// ---- connectivity waiters ----
+func waitForSSH(parent context.Context, ip string) error {
+	port := 22
+	addr := net.JoinHostPort(ip, strconv.Itoa(port))
+
+	dialTO := 3 * time.Second   // per-attempt timeout
+	interval := 2 * time.Second // pause between retries
+	heartbeat := 30 * time.Second
+
+	log.Printf("[wait] probing SSH at %s (no max timeout, dialTO=%s, interval=%s)", addr, dialTO, interval)
+
+	nextHeartbeat := time.Now().Add(heartbeat)
+
+	for {
+		// abort if caller cancelled
+		select {
+		case <-parent.Done():
+			return fmt.Errorf("cancelled while waiting for SSH: %w", parent.Err())
+		default:
+		}
+
+		// try connect
+		c, err := net.DialTimeout("tcp", addr, dialTO)
+		if err == nil {
+			_ = c.Close()
+			log.Printf("[wait] SSH reachable at %s", addr)
+			return nil
+		}
+
+		// periodic heartbeat log
+		if time.Now().After(nextHeartbeat) {
+			log.Printf("[wait] still waiting for SSH at %s (last error: %v)", addr, err)
+			nextHeartbeat = time.Now().Add(heartbeat)
+		}
+
+		time.Sleep(interval)
+	}
 }
