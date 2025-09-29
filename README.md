@@ -108,6 +108,7 @@ On server:
 ```shell
 sudo chmod 0755 /opt/ansible-executor/bin/ansible-executor
 sudo chown -R ansiblex:ansiblex /opt/ansible-executor
+sudo restorecon -Rv /opt/ansible-executor
 ```
 
 3. Create a systemd unit
@@ -165,14 +166,14 @@ journalctl -u ansible-executor -f
 Publish a message to NATS:
 ```shell
 nats pub db.install '{
-  "id": 4,
+  "id": 6,
   "name": "db postgresql prod",
-  "ip_address": "10.2.10.16",
-  "vm_user": "apri",
-  "vm_password": "salah_password",
+  "ip_address": "10.2.10.22",
+  "vm_user": "hiteman",
+  "vm_password": "hiteman123",
   "db_type": "postgresql",
-  "db_user": "appuser",
-  "db_password": "appPassword",
-  "db_name": "app_db" 
+  "db_user": "hiteman",
+  "db_password": "hiteman123",
+  "db_name": "hiteman_db" 
 }'
 ```
