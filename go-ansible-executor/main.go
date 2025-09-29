@@ -92,6 +92,7 @@ func main() {
 // ------------ message handling ------------
 
 func handleMessage(parent context.Context, nc *nats.Conn, msg *nats.Msg) {
+	time.Sleep(3 * time.Second)
 	var req InstallRequest
 	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		log.Printf("[warn] invalid JSON: %v", err)
